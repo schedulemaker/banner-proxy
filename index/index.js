@@ -19,7 +19,7 @@ function createResources(){
 async function requestData(event){
     //Check that a banner object has been created for the school and there is a cache entry for the school
     if (!cache.bannerCache[event.school]){
-        cache.bannerObjs[school] = new Banner(event.school);
+        cache.bannerObjs[event.school] = new cache.Banner(event.school);
         cache.bannerCache[event.school] = {};
     }
 
@@ -29,7 +29,7 @@ async function requestData(event){
     }
 
     //perform the request to Banner for the data
-    let data = await cache.bannerObjs[school][event.method](event.params);
+    let data = await cache.bannerObjs[event.school][event.method](event.params);
     //put the data into the cache
     cache.bannerCache[event.school][event.term][event.method] = {
         timestamp: Date.now() / 1000,
