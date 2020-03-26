@@ -39,7 +39,7 @@ jobs:
         
       - name: Deploy to AWS
         run: |
-          aws lambda update-function-code --function-name $FUNCTION_NAME --publish --zip-file fileb://index/function.zip --region $REGION
+          aws lambda update-function-code --function-name $FUNCTION_NAME --zip-file fileb://index/function.zip --region $REGION
         
       - name: Update configuration to latest BannerJS layer
         run: |
