@@ -48,5 +48,5 @@ jobs:
           
       - name: Create new Lambda version
         run: |
-          aws lambda publish-version --function-name $FUNCTION_NAME --description $PR_TITLE --region $REGION
+          aws lambda publish-version --function-name $FUNCTION_NAME --description "$PR_TITLE" --region $REGION
           
