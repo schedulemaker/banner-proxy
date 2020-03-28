@@ -5,6 +5,7 @@ if (typeof(cache) === 'undefined'){
 }
 
 exports.handler = async ({school, term, method, params}, context) => {
+    cache.counter++;
     let data = checkCache(school, term, method) || checkTempDir(school, term, method);
     if (data) return data;
     else {
