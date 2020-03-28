@@ -6,7 +6,7 @@ if (typeof(cache) === 'undefined'){
 
 exports.handler = async ({school, term, method, params}, context) => {
     cache.counter++;
-    let data = checkCache(school, term, method) || checkTempDir(school, term, method);
+    let data = checkCache(school, term, method) || await checkTempDir(school, term, method);
     if (data) return data;
     else {
         let request = requestData(school, term, method, params);
@@ -62,7 +62,7 @@ async function requestData(school, term, method, params){
     //perform the request to Banner for the data
     let request = cache.bannerObjs[school][method](params);
 
-    cache.useTmp ? createCacheEntries(school, term) : createTempDirEntries(school, term);
+    cache.useTmp ? createCacheEntries(school, term) : await createTempDirEntries(school, term);
 
     //put the data into the cache
     let data = await request;
