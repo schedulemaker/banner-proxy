@@ -1,6 +1,6 @@
 'use-strict'
 
-if (!Banner){
+if (typeof(Banner) === 'undefined'){
     var Banner = require('banner');
 }
 

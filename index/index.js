@@ -1,6 +1,6 @@
 'use-strict'
 
-if (!cache){
+if (typeof(cache) === 'undefined'){
     var cache = require('./cache');
 }
 
@@ -9,29 +9,43 @@ exports.handler = async ({school, term, method, params}, context) => {
 }
 
 function checkCache(school, term){
-    return null; //TODO - check cache
+    let obj = cache.bannerCache[school][term][method];
+
+    //Check if the object is in the cache
+    if (typeof(obj) === 'undefined'){
+        return false;
+    }
+
+    //Check if the object is in the cache, but expired
+    if ((Date.now() / 1000) - obj.timestamp < process.env.EXPIRE){
+        return false
+    }
+    else return obj;
 }
 
-function createResources(){
-
-}
-
-async function requestData(school, term, method, params){
+function createCacheEntries(school, term){
     //Check that a banner object has been created for the school and there is a cache entry for the school
-    if (!cache.bannerCache[school]){
+    if (typeof(cache.bannerCache[school]) === 'undefined'){
         cache.bannerObjs[school] = new cache.Banner(school);
         cache.bannerCache[school] = {};
     }
 
     //Check there is a term entry for the school
-    if (!cache.bannerCache[school][term]){
+    if (typeof(cache.bannerCache[school][term]) === 'undefined'){
         cache.bannerCache[school][term] = {};
     }
+}
 
+async function requestData(school, term, method, params){
     //perform the request to Banner for the data
-    let data = await cache.bannerObjs[school][method](params);
+    let request = cache.bannerObjs[school][method](params);
+
+    createCacheEntries(school, term);
+
     //put the data into the cache
+    let data = await request;
     cache.bannerCache[school][term][method] = {
+        //Timestamp is stored as SECONDS
         timestamp: Date.now() / 1000,
         data: data
     }
