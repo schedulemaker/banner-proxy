@@ -48,7 +48,7 @@ describe('Banner Proxy', function(){
                 useTmp: false
             }
             this.fullContext = {
-                memoryLimitInMB: (process.memoryUsage().rss / (1024 * 1024)) / process.env.RAM_THRESHOLD //Add a little bit of overhead to current RAM usage
+                memoryLimitInMB: (process.memoryUsage().rss / (1024 * 1024)) * (process.env.RAM_THRESHOLD / 2) //Add a little bit of overhead to current RAM usage
             },
             this.notFullContext = {
                 memoryLimitInMB: 128 //Smallest RAM amount allowed by Lambda. Should be more than sufficient for testing.
@@ -180,9 +180,9 @@ describe('Banner Proxy', function(){
             this.function(this.school, this.term);
         });
 
-        it('Should create a new Banner object for the school', function(){
-            assert.strict(index.__get__('cache').bannerObjs[this.school]);
-        });
+        // it('Should create a new Banner object for the school', function(){
+        //     assert.strict(index.__get__('cache').bannerObjs[this.school]);
+        // });
 
         it('Should create an entry for the school and term', function(){
             assert.strict(index.__get__('cache').bannerCache[this.school][this.term]);
@@ -217,6 +217,10 @@ describe('Banner Proxy', function(){
     describe('#requestData', function(){
         before(function(){
             this.function = index.__get__('requestData');
+            this.cache = {
+                bannerCache: {},
+                bannerObjs: {}
+            }
         });
 
         it('Should handle errors from Banner constructor', async function(){
@@ -237,16 +241,51 @@ describe('Banner Proxy', function(){
     });
 
     describe('#Handler', function(){
-        before(function(){
+        before(async function(){
             this.function = index.handler;
+            this.params = {
+                school: 'temple',
+                term: 202036,
+                method: 'getTerms',
+                params: {}
+            };
+            this.badArgs = {
+                school: 'temple',
+                term: 0
+            };
+            this.context = {
+                memoryLimitInMB: 0
+            };
+            this.cache = {
+                counter: process.env.CHECK_FREQUENCY - 1,
+                useTmp: false,
+                bannerObjs: {},
+                bannerCache: {},
+                fs: {
+                    mkdir: mkdir,
+                    writeFile: writeFile
+                },
+                Banner: Banner,
+                dir: '/tmp'
+            }
+            index.__set__({cache: this.cache});
+            await index.handler(this.params, this.context);
         });
 
-        it('Should increment the counter', async function(){
-
+        it('Should handle incorrect arguments', function(){
+            assert.rejects(async () => await index.handler(this.badArgs), Error, 'Must provide school, term, and method');
         });
 
-        it(`Should call checkRAM every ${process.env.CHECK_FREQUENCY} times`, async function(){
+        it('Should increment the counter', function(){
+            assert.strict(index.__get__('cache').counter == process.env.CHECK_FREQUENCY);
+        });
 
+        it(`Should call checkRAM every ${process.env.CHECK_FREQUENCY} times`, function(){
+            assert.strict(index.__get__('cache').useTmp);
+        });   
+
+        after(async function(){
+            await rmdir(`/tmp/${this.params.school}`, {recursive: true});
         });
     }); 
 });

@@ -4,16 +4,18 @@ if (typeof(cache) === 'undefined'){
     var cache = require('./cache');
 }
 
-exports.handler = async ({school, term, method, params}, context) => {
+exports.handler = async ({school, term, method, params={}}, context) => {
+    if (!(school && term && method)){
+        throw new Error('Must provide school, term, and method');
+    }
     cache.counter++;
     let data = checkCache(school, term, method) || await checkTmpDir(school, term, method);
     if (data) return data;
     else {
-        let request = requestData(school, term, method, params);
         if (cache.counter % process.env.CHECK_FREQUENCY === 0){
             checkRAM(context);
         }
-        return await request;
+        return await requestData(school, term, method, params);
     }
 }
 
@@ -44,9 +46,8 @@ function checkCache(school, term, method){
 }
 
 function createCacheEntries(school, term){
-    //Check that a banner object has been created for the school and there is a cache entry for the school
+    //Check that there is a cache entry for the school
     if (typeof(cache.bannerCache[school]) === 'undefined'){
-        cache.bannerObjs[school] = new cache.Banner(school);
         cache.bannerCache[school] = {};
     }
 
@@ -70,10 +71,13 @@ async function createTmpDirEntries(school, term){
 }
 
 async function requestData(school, term, method, params){
+    if(typeof(cache.bannerObjs[school] === 'undefined')){
+        cache.bannerObjs[school] = new cache.Banner(school);
+    }
+    cache.useTmp ? await createTmpDirEntries(school, term) : createCacheEntries(school, term);
+
     //perform the request to Banner for the data
     let request = cache.bannerObjs[school][method](params);
-
-    cache.useTmp ? createCacheEntries(school, term) : await createTmpDirEntries(school, term);
 
     //put the data into the cache
     let data = await request;
