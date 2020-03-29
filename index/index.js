@@ -65,7 +65,7 @@ async function checkTmpDir(school, term, method){
     }
 }
 
-async function createTempDirEntries(school, term){
+async function createTmpDirEntries(school, term){
     await cache.fs.mkdir(`${cache.dir}/${school}/${term}`, {recursive: true});
 }
 
@@ -73,7 +73,7 @@ async function requestData(school, term, method, params){
     //perform the request to Banner for the data
     let request = cache.bannerObjs[school][method](params);
 
-    cache.useTmp ? createCacheEntries(school, term) : await createTempDirEntries(school, term);
+    cache.useTmp ? createCacheEntries(school, term) : await createTmpDirEntries(school, term);
 
     //put the data into the cache
     let data = await request;
