@@ -18,7 +18,12 @@ exports.handler = async ({school, term, method, params}, context) => {
 }
 
 function checkCache(school, term, method){
-    let obj = cache.bannerCache[school][term][method];
+    let obj = {};
+    try {
+        obj = cache.bannerCache[school][term][method];
+    } catch (error) {
+        return false;
+    }
 
     //Check if the object is in the cache
     if (typeof(obj) === 'undefined'){
@@ -26,7 +31,7 @@ function checkCache(school, term, method){
     }
 
     //Check if the object is in the cache, but expired
-    if ((Date.now() / 1000) - obj.timestamp < process.env.EXPIRE){
+    if ((Date.now() / 1000) - obj.timestamp > process.env.EXPIRE){
         return false
     }
     else return obj.data;
