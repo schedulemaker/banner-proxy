@@ -6,7 +6,7 @@ if (typeof(cache) === 'undefined'){
 
 exports.handler = async ({school, term, method, params}, context) => {
     cache.counter++;
-    let data = checkCache(school, term, method) || await checkTempDir(school, term, method);
+    let data = checkCache(school, term, method) || await checkTmpDir(school, term, method);
     if (data) return data;
     else {
         let request = requestData(school, term, method, params);
@@ -15,6 +15,15 @@ exports.handler = async ({school, term, method, params}, context) => {
         }
         return await request;
     }
+}
+
+/**
+ * 
+ * @param {*} obj The cache entry to check
+ * @returns {boolean} TRUE if the object is expired, FALSE if the object is not expired
+ */
+function checkExpiration(obj){
+    return (Date.now() / 1000) - obj.timestamp > process.env.EXPIRE;
 }
 
 function checkCache(school, term, method){
@@ -31,10 +40,7 @@ function checkCache(school, term, method){
     }
 
     //Check if the object is in the cache, but expired
-    if ((Date.now() / 1000) - obj.timestamp > process.env.EXPIRE){
-        return false
-    }
-    else return obj.data;
+    return checkExpiration(obj) ? false : obj.data;
 }
 
 function createCacheEntries(school, term){
@@ -50,10 +56,10 @@ function createCacheEntries(school, term){
     }
 }
 
-async function checkTempDir(school, term, method){
+async function checkTmpDir(school, term, method){
     try {
-        let obj = await cache.fs.readFile(`${cache.dir}/${school}/${term}/${method}.json`, 'utf8');
-        return obj.data;
+        let obj = JSON.parse(await cache.fs.readFile(`${cache.dir}/${school}/${term}/${method}.json`, 'utf8'));
+        return checkExpiration(obj) ? false : obj.data;
     } catch (error) {
         return false;
     }
