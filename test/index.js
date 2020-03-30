@@ -8,7 +8,6 @@ const {promisify} = require('util');
 const mkdir = promisify(fs.mkdir);
 const writeFile = promisify(fs.writeFile);
 const rmdir = promisify(fs.rmdir);
-const Banner = require('../index/node_modules/banner');
 
 process.env.RAM_THRESHOLD = 0.9;
 process.env.CHECK_FREQUENCY = 10;
@@ -16,6 +15,22 @@ process.env.EXPIRE = 600;
 
 function randInt(){
     return Math.floor(Math.random() * Math.floor(999999));
+}
+
+const BannerMock = class {
+    constructor(school){
+        if (school !== 'foo'){
+            throw new Error('Bad school');
+        }
+    }
+
+    successfulRequest(){
+        return  'data';
+    }
+
+    badRequest(){
+        throw new Error('Request error');
+    }
 }
 
 describe('Banner Proxy', function(){
@@ -48,7 +63,7 @@ describe('Banner Proxy', function(){
                 useTmp: false
             }
             this.fullContext = {
-                memoryLimitInMB: (process.memoryUsage().rss / (1024 * 1024)) * (process.env.RAM_THRESHOLD / 2) //Add a little bit of overhead to current RAM usage
+                memoryLimitInMB: (process.memoryUsage().rss / (1024 * 1024)) * 1 + ((1 - process.env.RAM_THRESHOLD) / 2) //Add a little bit of overhead to current RAM usage
             },
             this.notFullContext = {
                 memoryLimitInMB: 128 //Smallest RAM amount allowed by Lambda. Should be more than sufficient for testing.
@@ -145,8 +160,8 @@ describe('Banner Proxy', function(){
             index.__set__({cache: this.cache});
         });
 
-        it('Should not throw an error', function(){
-            assert.doesNotReject(async () => await this.function(this.school, this.term, this.method));
+        it('Should not throw an error', async function(){
+            await assert.doesNotReject(this.function(this.school, this.term, this.method));
         });
 
         it('Should return FALSE if the file is not in the /tmp directory', async function(){
@@ -168,10 +183,9 @@ describe('Banner Proxy', function(){
 
     describe('#createCacheEntries', function(){
         before(function(){
-            this.school = 'temple',
+            this.school = 'foo',
             this.term = randInt();
             this.cache = {
-                Banner: Banner,
                 bannerCache: {},
                 bannerObjs: {}
             };
@@ -219,38 +233,58 @@ describe('Banner Proxy', function(){
             this.function = index.__get__('requestData');
             this.cache = {
                 bannerCache: {},
-                bannerObjs: {}
-            }
+                bannerObjs: {},
+                Banner: BannerMock,
+                dir: '/tmp',
+                fs: {
+                    mkdir: mkdir,
+                    writeFile: writeFile
+                }
+            };
+            this.term = 1;
+            this.goodSchool = 'foo';
+            this.badSchool = 'fakeSchool';
+            this.goodMethod = 'successfulRequest';
+            this.badMethod = 'badRequest';
+            this.fakeMethod = 'methodThatDoesntExist';
+            index.__set__({cache: this.cache});
         });
 
-        it('Should handle errors from Banner constructor', async function(){
-
-        });
-
-        it('Should handle errors from the Banner request', async function(){
-
+        it('Should pass through errors from Banner', async function(){
+            await assert.rejects(this.function(this.badSchool, this.term, this.goodMethod), Error, 'Bad school');
+            await assert.rejects(this.function(this.goodSchool, this.term, this.badMethod), Error, 'Request error');
+            await assert.rejects(this.function(this.badSchool, this.term, this.fakeMethod), Error);
         });
 
         it('Should put data in the cache if there is enough RAM', async function(){
-
+            this.cache.useTmp = false;
+            index.__set__({cache: this.cache});
+            await this.function(this.goodSchool, this.term, this.goodMethod);
+            assert.strict(index.__get__('cache').bannerCache[this.goodSchool][this.term][this.goodMethod]);
         });
 
         it('Should put data in the /tmp directory if there is not enough RAM', async function(){
+            this.cache.useTmp = true;
+            index.__set__({cache: this.cache});
+            await this.function(this.goodSchool, this.term, this.goodMethod);
+            assert.strict(fs.existsSync(`/tmp/${this.goodSchool}/${this.term}/${this.goodMethod}.json`));
+        });
 
+        after(async function(){
+            await rmdir(`/tmp/${this.school}`, {recursive: true});
         });
     });
 
-    describe('#Handler', function(){
+    describe('#handler', function(){
         before(async function(){
             this.function = index.handler;
-            this.params = {
-                school: 'temple',
-                term: 202036,
-                method: 'getTerms',
-                params: {}
+            this.goodArgs = {
+                school: 'foo',
+                term: 1,
+                method: 'successfulRequest'
             };
             this.badArgs = {
-                school: 'temple',
+                school: 'fakeSchool',
                 term: 0
             };
             this.context = {
@@ -265,15 +299,15 @@ describe('Banner Proxy', function(){
                     mkdir: mkdir,
                     writeFile: writeFile
                 },
-                Banner: Banner,
+                Banner: BannerMock,
                 dir: '/tmp'
             }
             index.__set__({cache: this.cache});
-            await index.handler(this.params, this.context);
+            await index.handler(this.goodArgs, this.context);
         });
 
-        it('Should handle incorrect arguments', function(){
-            assert.rejects(async () => await index.handler(this.badArgs), Error, 'Must provide school, term, and method');
+        it('Should handle incorrect arguments', async function(){
+            await assert.rejects(index.handler(this.badArgs), Error, 'Must provide school, term, and method');
         });
 
         it('Should increment the counter', function(){
@@ -285,7 +319,7 @@ describe('Banner Proxy', function(){
         });   
 
         after(async function(){
-            await rmdir(`/tmp/${this.params.school}`, {recursive: true});
+            await rmdir(`/tmp/${this.goodArgs.school}`, {recursive: true});
         });
     }); 
 });

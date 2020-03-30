@@ -80,16 +80,15 @@ async function requestData(school, term, method, params){
     let request = cache.bannerObjs[school][method](params);
 
     //put the data into the cache
-    let data = await request;
     let obj = {
         //Timestamp is stored as SECONDS
         timestamp: Date.now() / 1000,
-        data: data
+        data: await request
     }
     cache.useTmp ? await cache.fs.writeFile(`${cache.dir}/${school}/${term}/${method}.json`, JSON.stringify(obj), 'utf8') 
         : cache.bannerCache[school][term][method] = obj;
     //return the data
-    return data;
+    return obj.data;
 }
 
 /**
