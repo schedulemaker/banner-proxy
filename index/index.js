@@ -74,10 +74,13 @@ async function requestData(school, term, method, params){
     if(typeof(cache.bannerObjs[school] === 'undefined')){
         cache.bannerObjs[school] = new cache.Banner(school);
     }
-    cache.useTmp ? await createTmpDirEntries(school, term) : createCacheEntries(school, term);
 
     //perform the request to Banner for the data
     let request = cache.bannerObjs[school][method](params);
+
+    if (!cache.excluded_methods.includes(method)){
+        cache.useTmp ? await createTmpDirEntries(school, term) : createCacheEntries(school, term);
+    }
 
     //put the data into the cache
     let obj = {
@@ -85,8 +88,11 @@ async function requestData(school, term, method, params){
         timestamp: Date.now() / 1000,
         data: await request
     }
-    cache.useTmp ? await cache.fs.writeFile(`${cache.dir}/${school}/${term}/${method}.json`, JSON.stringify(obj), 'utf8') 
-        : cache.bannerCache[school][term][method] = obj;
+    if (!cache.excluded_methods.includes(method)){
+        cache.useTmp ? await cache.fs.writeFile(`${cache.dir}/${school}/${term}/${method}.json`, JSON.stringify(obj), 'utf8') 
+            : cache.bannerCache[school][term][method] = obj;
+    }
+    
     //return the data
     return obj.data;
 }

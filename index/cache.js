@@ -12,6 +12,10 @@ if (typeof(fs) === 'undefined'){
     var readFile = promisify(fs.readFile);
 }
 
+if (typeof(excluded_methods) === 'undefined'){
+    var excluded_methods = process.env.EXCLUDED_METHODS.split(' ');
+}
+
 module.exports = {
     Banner: Banner,
     bannerObjs: {},
@@ -23,5 +27,6 @@ module.exports = {
     },
     dir: '/tmp',
     useTmp: false,
-    counter: 1
+    counter: 1,
+    excluded_methods: excluded_methods
 }

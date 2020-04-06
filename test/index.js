@@ -31,6 +31,10 @@ const BannerMock = class {
     badRequest(){
         throw new Error('Request error');
     }
+
+    excludedMethod(){
+        return 'data that should not be cached';
+    }
 }
 
 describe('Banner Proxy', function(){
@@ -231,6 +235,13 @@ describe('Banner Proxy', function(){
     describe('#requestData', function(){
         before(function(){
             this.function = index.__get__('requestData');
+            this.term = 1;
+            this.goodSchool = 'foo';
+            this.badSchool = 'fakeSchool';
+            this.goodMethod = 'successfulRequest';
+            this.badMethod = 'badRequest';
+            this.fakeMethod = 'methodThatDoesntExist';
+            this.excludedMethod = 'excludedMethod';
             this.cache = {
                 bannerCache: {},
                 bannerObjs: {},
@@ -239,14 +250,11 @@ describe('Banner Proxy', function(){
                 fs: {
                     mkdir: mkdir,
                     writeFile: writeFile
-                }
+                },
+                excluded_methods: [
+                    this.excludedMethod
+                ]
             };
-            this.term = 1;
-            this.goodSchool = 'foo';
-            this.badSchool = 'fakeSchool';
-            this.goodMethod = 'successfulRequest';
-            this.badMethod = 'badRequest';
-            this.fakeMethod = 'methodThatDoesntExist';
             index.__set__({cache: this.cache});
         });
 
@@ -268,6 +276,13 @@ describe('Banner Proxy', function(){
             index.__set__({cache: this.cache});
             await this.function(this.goodSchool, this.term, this.goodMethod);
             assert.strict(fs.existsSync(`/tmp/${this.goodSchool}/${this.term}/${this.goodMethod}.json`));
+        });
+
+        it('Should NOT put data from excluded methods into the cache or tmp dir', async function(){
+            index.__set__({cache: this.cache});
+            await this.function(this.goodSchool, this.term, this.excludedMethod);
+            assert.strictEqual(index.__get__('cache').bannerCache[this.goodSchool][this.term][this.excludedMethod], 'undefined');
+            assert.strictEqual(fs.existsSync(`${this.cache.dir}/${this.goodSchool}/${this.term}/${this.excludedMethod}`), false);
         });
 
         after(async function(){
