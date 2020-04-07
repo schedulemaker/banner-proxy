@@ -1,4 +1,8 @@
 'use-strict'
+process.env.RAM_THRESHOLD = 0.9;
+process.env.CHECK_FREQUENCY = 10;
+process.env.EXPIRE = 600;
+process.env.EXCLUDED_METHODS = 'excludedMethod';
 
 const assert = require('assert');
 const rewire = require('rewire');
@@ -8,10 +12,6 @@ const {promisify} = require('util');
 const mkdir = promisify(fs.mkdir);
 const writeFile = promisify(fs.writeFile);
 const rmdir = promisify(fs.rmdir);
-
-process.env.RAM_THRESHOLD = 0.9;
-process.env.CHECK_FREQUENCY = 10;
-process.env.EXPIRE = 600;
 
 function randInt(){
     return Math.floor(Math.random() * Math.floor(999999));
@@ -30,6 +30,10 @@ const BannerMock = class {
 
     badRequest(){
         throw new Error('Request error');
+    }
+
+    excludedMethod(){
+        return 'data that should not be cached';
     }
 }
 
@@ -231,6 +235,13 @@ describe('Banner Proxy', function(){
     describe('#requestData', function(){
         before(function(){
             this.function = index.__get__('requestData');
+            this.term = 1;
+            this.goodSchool = 'foo';
+            this.badSchool = 'fakeSchool';
+            this.goodMethod = 'successfulRequest';
+            this.badMethod = 'badRequest';
+            this.fakeMethod = 'methodThatDoesntExist';
+            this.excludedMethod = 'excludedMethod';
             this.cache = {
                 bannerCache: {},
                 bannerObjs: {},
@@ -239,14 +250,11 @@ describe('Banner Proxy', function(){
                 fs: {
                     mkdir: mkdir,
                     writeFile: writeFile
-                }
+                },
+                excluded_methods: [
+                    this.excludedMethod
+                ]
             };
-            this.term = 1;
-            this.goodSchool = 'foo';
-            this.badSchool = 'fakeSchool';
-            this.goodMethod = 'successfulRequest';
-            this.badMethod = 'badRequest';
-            this.fakeMethod = 'methodThatDoesntExist';
             index.__set__({cache: this.cache});
         });
 
@@ -270,6 +278,13 @@ describe('Banner Proxy', function(){
             assert.strict(fs.existsSync(`/tmp/${this.goodSchool}/${this.term}/${this.goodMethod}.json`));
         });
 
+        it('Should NOT put data from excluded methods into the cache or tmp dir', async function(){
+            index.__set__({cache: this.cache});
+            await this.function(this.goodSchool, this.term, this.excludedMethod);
+            assert.strictEqual(index.__get__('cache').bannerCache[this.goodSchool][this.term][this.excludedMethod], undefined);
+            assert.strictEqual(fs.existsSync(`${this.cache.dir}/${this.goodSchool}/${this.term}/${this.excludedMethod}`), false);
+        });
+
         after(async function(){
             await rmdir(`/tmp/${this.school}`, {recursive: true});
         });
@@ -290,6 +305,7 @@ describe('Banner Proxy', function(){
             this.context = {
                 memoryLimitInMB: 0
             };
+            this.excludedMethod = 'excludedMethod';
             this.cache = {
                 counter: process.env.CHECK_FREQUENCY - 1,
                 useTmp: false,
@@ -300,7 +316,10 @@ describe('Banner Proxy', function(){
                     writeFile: writeFile
                 },
                 Banner: BannerMock,
-                dir: '/tmp'
+                dir: '/tmp',
+                excluded_methods: [
+                    this.excludedMethod
+                ]
             }
             index.__set__({cache: this.cache});
             await index.handler(this.goodArgs, this.context);
