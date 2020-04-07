@@ -1,7 +1,7 @@
 'use-strict'
 
 if (typeof(Banner) === 'undefined'){
-    var Banner = require('banner');
+    var Banner = require('@schedulemaker/bannerjs');
 }
 
 if (typeof(fs) === 'undefined'){
