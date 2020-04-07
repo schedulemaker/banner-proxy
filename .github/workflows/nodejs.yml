@@ -1,4 +1,6 @@
 name: Node.js CI
+env:
+  NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 on:
   repository_dispatch:
@@ -26,7 +28,8 @@ jobs:
 #      with:
 #        node-version: ${{ matrix.node-version }}
     - run: npm install -g mocha 
-    - run: npm install rewire @schedulemaker/bannerjs@0.4.0
+    - run: npm install rewire 
+    - run: npm install @schedulemaker/bannerjs --registry https://npm.pkg.github.com
     - run: mocha
       env:
         CI: true
