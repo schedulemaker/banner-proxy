@@ -4,19 +4,6 @@ process.env.CHECK_FREQUENCY = 10;
 process.env.EXPIRE = 600;
 process.env.EXCLUDED_METHODS = 'excludedMethod';
 
-const assert = require('assert');
-const rewire = require('rewire');
-const index = rewire('../index');
-const fs = require('fs');
-const {promisify} = require('util');
-const mkdir = promisify(fs.mkdir);
-const writeFile = promisify(fs.writeFile);
-const rmdir = promisify(fs.rmdir);
-
-function randInt(){
-    return Math.floor(Math.random() * Math.floor(999999));
-}
-
 const BannerMock = class {
     constructor(school){
         if (school !== 'foo'){
@@ -35,6 +22,21 @@ const BannerMock = class {
     excludedMethod(){
         return 'data that should not be cached';
     }
+}
+
+const assert = require('assert');
+const rewire = require('rewire');
+const Banner = BannerMock;
+const cache = rewire('../index/cache');
+const index = rewire('../index');
+const fs = require('fs');
+const {promisify} = require('util');
+const mkdir = promisify(fs.mkdir);
+const writeFile = promisify(fs.writeFile);
+const rmdir = promisify(fs.rmdir);
+
+function randInt(){
+    return Math.floor(Math.random() * Math.floor(999999));
 }
 
 describe('Banner Proxy', function(){
