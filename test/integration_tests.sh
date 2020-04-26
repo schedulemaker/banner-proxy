@@ -1,12 +1,14 @@
+#!/bin/bash
+
 FILE='integration_tests.json'
 
 if test -f "$FILE"; then
-    PATH=FILE
+    FILE=FILE
 else
-    PATH="test/$FILE"
+    FILE="test/$FILE"
 fi
 
-aws lambda invoke 
-    --function-name 'tests:live'
-    --payload "file://$PATH"
-    --outfile 'integration_test_results.json'
+aws lambda invoke \
+    --function-name 'tests:live' \
+    --payload "file://$FILE" \
+    'integration_test_results.json' \
