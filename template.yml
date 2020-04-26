@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'   
+Resources:
+  BannerProxy:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: banner-proxy
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Sub |
+          #!/bin/bash echo $BUCKET
+        S3Key: BannerProxyCode
+      Runtime: nodejs12.x
+      Timeout: 10
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
