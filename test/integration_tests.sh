@@ -7,6 +7,6 @@ else
 fi
 
 aws lambda invoke 
-    --function-name 'banner-proxy:live'
+    --function-name 'tests:live'
     --payload "file://$PATH"
     --outfile 'integration_test_results.json'
