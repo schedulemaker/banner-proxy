@@ -20,8 +20,7 @@ Invoke the Lambda using **banner-proxy:\<QUALIFIER>**, where `<QUALIFIER>` can b
 
 #### To deploy the Lambda to AWS:
 1. Clone both this repository and the [BannerJS](https://github.com/schedulemaker/bannerjs) repository locally.
-2. Run the `deploy.sh` script in the BannerJS repo.
-3. Run the `deploy.sh` script in the Banner Proxy repo.
+2. Run `/path/to/bannerjs/deploy.sh | /path/to/banner proxy/deploy.sh`
 
 ### Unit tests
 This repo contains a [Mocha](https://mochajs.org/) test suite, utilizing a mocked Banner library. 
