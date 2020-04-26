@@ -1,3 +1,5 @@
 test.js
 .vscode
 index/node_modules
+node_modules
+integration_test_results.json

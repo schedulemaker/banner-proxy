@@ -5,17 +5,21 @@ process.env.EXPIRE = 600;
 process.env.EXCLUDED_METHODS = 'excludedMethod';
 
 const assert = require('assert');
-const rewire = require('rewire');
-const index = rewire('../index');
 const fs = require('fs');
+const rewire = require('rewire');
+const index = (function(){
+    //manually rewire Banner module to a blank file
+    const code = 'module.exports = {};';
+    fs.mkdirSync('./index/node_modules/banner', {recursive: true});
+    fs.writeFileSync('./index/node_modules/banner/index.js', code);
+    return rewire('../index');
+})();
+
 const {promisify} = require('util');
+
 const mkdir = promisify(fs.mkdir);
 const writeFile = promisify(fs.writeFile);
 const rmdir = promisify(fs.rmdir);
-
-function randInt(){
-    return Math.floor(Math.random() * Math.floor(999999));
-}
 
 const BannerMock = class {
     constructor(school){
@@ -35,6 +39,10 @@ const BannerMock = class {
     excludedMethod(){
         return 'data that should not be cached';
     }
+}
+
+function randInt(){
+    return Math.floor(Math.random() * Math.floor(999999));
 }
 
 describe('Banner Proxy', function(){
@@ -341,4 +349,8 @@ describe('Banner Proxy', function(){
             await rmdir(`/tmp/${this.goodArgs.school}`, {recursive: true});
         });
     }); 
+
+    after(function(){
+        fs.rmdirSync('./index/node_modules', {recursive: true});
+    });
 });
