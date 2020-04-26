@@ -36,3 +36,47 @@ This repo contains a [Mocha](https://mochajs.org/) test suite, utilizing a mocke
 **Note**: the [AWS CLI](https://aws.amazon.com/cli/) needs to be installed and configured for this section.
 
 The repo also contains a series of integration tests meant to be run against the deployed Lambda on AWS (where it has access to the Banner module via a custom layer). These can be found in `test/integration_tests.json` and can be run with the [Unit Testing Lambda](https://github.com/schedulemaker/tests) via the `test/integration_tests.sh` shell script, which will log the results to `integration_test_results.json`.
+
+
+#### Sample JSON for Lambda console test events:
+
+```
+{
+  "school": "temple",
+  "term": 202036,
+  "method": "classSearch",
+  "params": {
+    "term": 202036,
+    "subject": "MATH",
+    "offset": 0,
+    "pageSize": 25
+  }
+}
+```
+```
+{
+  "school": "temple",
+  "term": 202036,
+  "method": "getCampuses"
+}
+```
+```
+{
+  "school": "temple",
+  "term": 202036,
+  "method": "getInstructors",
+  "params": {
+    "term": 202036
+  }
+}
+```
+
+This test event should throw an error:
+```
+{
+  "school": "temple",
+  "foo": "foo",
+  "bar": "bar"
+}
+```
+
