@@ -70,13 +70,13 @@ async function createTmpDirEntries(school, term){
     await cache.fs.mkdir(`${cache.dir}/${school}/${term}`, {recursive: true});
 }
 
-async function requestData(school, term, method, params){
+async function requestData(school, term, method, params={}){
     if(typeof(cache.bannerObjs[school] === 'undefined')){
         cache.bannerObjs[school] = new cache.Banner(school);
     }
 
     //perform the request to Banner for the data
-    let request = cache.bannerObjs[school][method](params);
+    let request = cache.bannerObjs[school][method](...Object.values(params));
 
     if (!cache.excluded_methods.includes(method)){
         cache.useTmp ? await createTmpDirEntries(school, term) : createCacheEntries(school, term);
